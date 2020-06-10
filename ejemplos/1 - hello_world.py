@@ -2,7 +2,7 @@
 === EXAMPLE OUTPUT ===
 Circuit:
 (0, 0): ───X^0.5───M('m')───
-Results:
+Expected Result:
 m=11000111111011001000
 """
 
