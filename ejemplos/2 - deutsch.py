@@ -15,37 +15,12 @@ Circuit:
 0: ───────H───@───H───M('result')───
               │
 1: ───X───H───X─────────────────────
-Result f(0)⊕f(1):
-result=1
 """
 
 import random
-
 import cirq
 from cirq import H, X, CNOT, measure
-
-
-def main():
-    # Choose qubits to use.
-    q0, q1 = cirq.LineQubit.range(2)
-
-    # Pick a secret 2-bit function and create a circuit to query the oracle.
-    secret_function = [random.randint(0, 1) for _ in range(2)]
-    oracle = make_oracle(q0, q1, secret_function)
-    print('Secret function:\nf(x) = <{}>'.format(
-        ', '.join(str(e) for e in secret_function)))
-
-    # Embed the oracle into a quantum circuit querying it exactly once.
-    circuit = make_deutsch_circuit(q0, q1, oracle)
-    print('Circuit:')
-    print(circuit)
-
-    # Simulate the circuit.
-    simulator = cirq.Simulator()
-    result = simulator.run(circuit)
-    print('Result of f(0)⊕f(1):')
-    print(result)
-
+from cirq.circuits import InsertStrategy
 
 def make_oracle(q0, q1, secret_function):
     """ Gates implementing the secret function f(x)."""
@@ -57,20 +32,37 @@ def make_oracle(q0, q1, secret_function):
     if secret_function[1]:
         yield CNOT(q0, q1)
 
-
 def make_deutsch_circuit(q0, q1, oracle):
     c = cirq.Circuit()
 
     # Initialize qubits.
-    c.append([X(q1), H(q1), H(q0)])
+    c.append([X(q1), H(q1), H(q0)], strategy=InsertStrategy.NEW)
 
     # Query oracle.
-    c.append(oracle)
+    c.append(oracle, strategy=InsertStrategy.NEW)
 
     # Measure in X basis.
-    c.append([H(q0), measure(q0, key='result')])
+    c.append([H(q0), measure(q0, key='result')], strategy=InsertStrategy.NEW)
     return c
 
+def main():
+    # Choose qubits to use.
+    q0, q1 = cirq.LineQubit.range(2)
+
+    # Pick a secret 2-bit function and create a circuit to query the oracle.
+    secret_function = [random.randint(0, 1) for _ in range(2)]
+    oracle = make_oracle(q0, q1, secret_function)
+    print('Secret function:\nf(x) = <{}>'.format(', '.join(str(e) for e in secret_function)))
+
+    # Embed the oracle into a quantum circuit querying it exactly once.
+    circuit = make_deutsch_circuit(q0, q1, oracle)
+    print('\nCircuit:')
+    print(circuit)
+
+    # Simulate the circuit.
+    simulator = cirq.Simulator()
+    result = simulator.run(circuit)
+    print('\nf(0) XOR f(1) => ',result)
 
 if __name__ == '__main__':
     main()
