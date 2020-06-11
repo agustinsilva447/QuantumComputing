@@ -34,9 +34,39 @@ True
 """
 
 import random
-
 import cirq
 
+def make_oracle(input_qubits,
+                output_qubit,
+                secret_factor_bits,
+                secret_bias_bit):
+    """Gates implementing the function f(a) = a·factors + bias (mod 2)."""
+    if secret_bias_bit:
+        yield cirq.X(output_qubit)
+    for qubit, bit in zip(input_qubits, secret_factor_bits):
+        if bit:
+            yield cirq.CNOT(qubit, output_qubit)
+
+def make_bernstein_vazirani_circuit(input_qubits, output_qubit, oracle):
+    """Solves for factors in f(a) = a·factors + bias (mod 2) with one query."""
+    c = cirq.Circuit()
+    # Initialize qubits.
+    c.append([
+        cirq.X(output_qubit),
+        cirq.H(output_qubit),
+        cirq.H.on_each(*input_qubits),
+    ])
+    # Query oracle.
+    c.append(oracle)
+    # Measure in X basis.
+    c.append([
+        cirq.H.on_each(*input_qubits),
+        cirq.measure(*input_qubits, key='result')
+    ])
+    return c
+
+def bitstring(bits):
+    return ''.join(str(int(b)) for b in bits)
 
 def main(qubit_count = 8):
     circuit_sample_count = 3
@@ -72,49 +102,6 @@ def main(qubit_count = 8):
     most_common_bitstring = frequencies.most_common(1)[0][0]
     print('Most common matches secret factors:\n{}'.format(
         most_common_bitstring == bitstring(secret_factor_bits)))
-
-
-def make_oracle(input_qubits,
-                output_qubit,
-                secret_factor_bits,
-                secret_bias_bit):
-    """Gates implementing the function f(a) = a·factors + bias (mod 2)."""
-
-    if secret_bias_bit:
-        yield cirq.X(output_qubit)
-
-    for qubit, bit in zip(input_qubits, secret_factor_bits):
-        if bit:
-            yield cirq.CNOT(qubit, output_qubit)
-
-
-def make_bernstein_vazirani_circuit(input_qubits, output_qubit, oracle):
-    """Solves for factors in f(a) = a·factors + bias (mod 2) with one query."""
-
-    c = cirq.Circuit()
-
-    # Initialize qubits.
-    c.append([
-        cirq.X(output_qubit),
-        cirq.H(output_qubit),
-        cirq.H.on_each(*input_qubits),
-    ])
-
-    # Query oracle.
-    c.append(oracle)
-
-    # Measure in X basis.
-    c.append([
-        cirq.H.on_each(*input_qubits),
-        cirq.measure(*input_qubits, key='result')
-    ])
-
-    return c
-
-
-def bitstring(bits):
-    return ''.join(str(int(b)) for b in bits)
-
 
 if __name__ == '__main__':
     main()
