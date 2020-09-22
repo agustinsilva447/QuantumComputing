@@ -5,7 +5,7 @@ from qiskit.providers.ibmq import least_busy
 import matplotlib.pyplot as plt
 
 circuit = QuantumCircuit(3,3)
-circuit.h(0) 
+circuit.x(0) 
 circuit.barrier() 
 
 circuit.h(1)
